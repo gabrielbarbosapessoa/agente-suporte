@@ -3,8 +3,8 @@ from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 
 from agente.infra.db import conexao
+from agente.config import RERANK_MIN_SCORE, RERANKER_MODEL
 from agente.infra.llm import embeddings
-
 from agente.rag.rerank import reranquear
 
 SQL_BUSCA_HIBRIDA = """
@@ -46,11 +46,16 @@ LIMIT %(k)s
 class BuscaPoliticas(BaseRetriever):
     """Retriever híbrido das políticas da NovaByte."""
 
-    k: int = 4              
-    k_candidatos: int = 20  
-    k_fusao: int = 12    
-    rrf_k: int = 60         
+    k: int = 4               # quantos trechos devolver no final
+    k_candidatos: int = 20   # quantos cada busca (vetorial e textual) traz
+    k_fusao: int = 12        # quantos saem da fusão RRF e vão pro rerank
+    rrf_k: int = 60          # constante do RRF
+
+    # Rerank (bge-reranker-v2-m3) escolhido pelo eval (python -m evals.eval_retrieval):
+    # híbrida 100% hit / MRR 0,774 · + bge 100% / 0,804 · + mMiniLM 86% / 0,756
     usar_rerank: bool = True
+    modelo_rerank: str = RERANKER_MODEL
+    min_score_rerank: float = RERANK_MIN_SCORE
 
     def _get_relevant_documents(
         self, query: str, *, run_manager: CallbackManagerForRetrieverRun
@@ -81,7 +86,8 @@ class BuscaPoliticas(BaseRetriever):
         ]
 
         if self.usar_rerank:
-            docs = reranquear(query, docs, top_n=self.k)
+            docs = reranquear(query, docs, top_n=self.k,
+                              min_score=self.min_score_rerank, modelo=self.modelo_rerank)
         return docs
 
 if __name__ == "__main__":
