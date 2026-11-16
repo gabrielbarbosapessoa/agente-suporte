@@ -17,6 +17,9 @@ def main() -> None:
     agente = criar_grafo(checkpointer())
 
     print(f"Conversa: {thread_id}  (digite 'sair' para encerrar)\n")
+    salvo = agente.get_state(config).values
+    if salvo.get("mensagens"):
+        print(f"(última mensagem) NovaByte: {salvo['mensagens'][-1].content}\n")
     while True:
         mensagem = input("Você: ").strip()
         if mensagem.lower() in {"sair", "exit", "quit"}:

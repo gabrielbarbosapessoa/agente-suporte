@@ -10,12 +10,14 @@ from langchain_core.messages import BaseMessage
 
 class Classificacao(BaseModel):
 
-    intencao: Literal["politica", "pedido", "misto", "outro"] = Field(
+    intencao: Literal["politica", "pedido", "misto", "devolucao", "outro"] = Field(
         description=(
             "politica: dúvida sobre regras da loja (troca, garantia, frete, pagamento, cancelamento) "
             "que não depende de um pedido específico. "
             "pedido: quer saber dados de um pedido específico (status, rastreio, itens, valores). "
-            "misto: quer saber se uma regra se aplica ao SEU pedido (ex.: 'posso devolver meu pedido 1?'). "
+            "misto: PERGUNTA se uma regra se aplica ao SEU pedido (ex.: 'posso devolver meu pedido 1?'). "
+            "devolucao: QUER ABRIR a devolução de um pedido, é um pedido de ação "
+            "(ex.: 'quero devolver o pedido 1', 'pode abrir a devolução'). "
             "outro: saudação, agradecimento ou assunto fora do atendimento da loja."
         )
     )
