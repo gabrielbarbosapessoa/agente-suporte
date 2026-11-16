@@ -1,25 +1,29 @@
-
 import json
-from typing import TypedDict
+from typing import Annotated, TypedDict
 
 from langchain_core.documents import Document
+from langchain_core.messages import AIMessage, AnyMessage
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.message import add_messages
 
 from agente.busca import BuscaPoliticas
+from agente.config import JANELA_HISTORICO
 from agente.pedidos import buscar_pedido
 from agente.regras import analisar_pedido
 from agente.resposta import cadeia_resposta
 from agente.roteador import Classificacao, classificar
 
 
-
 class Estado(TypedDict, total=False):
-    mensagem: str                         
-    historico: list[tuple[str, str]]      
-    classificacao: Classificacao          
-    trechos: list[Document]             
-    dados_pedido: str                  
-    resposta: str                        
+    mensagens: Annotated[list[AnyMessage], add_messages]  
+    email: str | None                              
+    pedido_id: int | None
+
+
+    classificacao: Classificacao
+    trechos: list[Document]
+    dados_pedido: str | None
+    resposta: str
 
 
 MSG_BOAS_VINDAS = (
@@ -32,9 +36,29 @@ MSG_PEDIR_DADOS = (
 )
 
 
+def _responder_com(texto: str) -> dict:
+    """Toda resposta vira uma AIMessage no histórico."""
+    return {"resposta": texto, "mensagens": [AIMessage(content=texto)]}
+
+
 
 def rotear(estado: Estado) -> dict:
-    return {"classificacao": classificar(estado["mensagem"], estado.get("historico"))}
+    mensagens = estado["mensagens"]
+    ultima = mensagens[-1].content
+    historico = mensagens[:-1][-JANELA_HISTORICO:] 
+
+    c = classificar(ultima, historico)
+
+    atualizacao = {
+        "classificacao": c,
+        "trechos": [],
+        "dados_pedido": None,
+    }
+    if c.email:
+        atualizacao["email"] = c.email
+    if c.pedido_id:
+        atualizacao["pedido_id"] = c.pedido_id
+    return atualizacao
 
 
 def buscar_politicas(estado: Estado) -> dict:
@@ -43,8 +67,7 @@ def buscar_politicas(estado: Estado) -> dict:
 
 
 def consultar_pedido(estado: Estado) -> dict:
-    c = estado["classificacao"]
-    pedido = buscar_pedido(c.pedido_id, c.email)
+    pedido = buscar_pedido(estado["pedido_id"], estado["email"])
     if pedido is None:
         return {"dados_pedido": "Pedido não encontrado para esse número e e-mail."}
     dados = {
@@ -60,15 +83,15 @@ def responder(estado: Estado) -> dict:
         "trechos": estado.get("trechos", []),
         "dados_pedido": estado.get("dados_pedido"),
     })
-    return {"resposta": resposta}
+    return _responder_com(resposta)
 
 
 def boas_vindas(estado: Estado) -> dict:
-    return {"resposta": MSG_BOAS_VINDAS} 
+    return _responder_com(MSG_BOAS_VINDAS)  
 
 
 def pedir_dados(estado: Estado) -> dict:
-    return {"resposta": MSG_PEDIR_DADOS} 
+    return _responder_com(MSG_PEDIR_DADOS)  
 
 
 
@@ -78,8 +101,8 @@ def depois_do_roteador(estado: Estado) -> str:
         return "boas_vindas"
     if c.intencao == "politica":
         return "buscar_politicas"
-  
-    if not (c.pedido_id and c.email):
+
+    if not (estado.get("pedido_id") and estado.get("email")):
         return "pedir_dados"
     return "buscar_politicas" if c.intencao == "misto" else "consultar_pedido"
 
@@ -87,7 +110,8 @@ def depois_do_roteador(estado: Estado) -> str:
 def depois_da_busca(estado: Estado) -> str:
     return "consultar_pedido" if estado["classificacao"].intencao == "misto" else "responder"
 
-def criar_grafo():
+
+def criar_grafo(checkpointer=None):
     g = StateGraph(Estado)
 
     g.add_node("rotear", rotear)
@@ -108,18 +132,4 @@ def criar_grafo():
     g.add_edge("boas_vindas", END)
     g.add_edge("pedir_dados", END)
 
-    return g.compile()
-
-
-if __name__ == "__main__":
-    import sys
-
-    mensagem = " ".join(sys.argv[1:]) or "Posso devolver meu pedido 1? Meu e-mail é ana.souza@example.com"
-    agente = criar_grafo()
-
-
-    for passo in agente.stream({"mensagem": mensagem}, stream_mode="updates"):
-        for no in passo:
-            print(f"→ {no}")
-            final = passo[no]
-    print("\n" + final["resposta"])
+    return g.compile(checkpointer=checkpointer)

@@ -9,3 +9,4 @@ langchain-text-splitters
 langchain-google-genai
 sentence-transformers
 langgraph
+langgraph-checkpoint-postgres

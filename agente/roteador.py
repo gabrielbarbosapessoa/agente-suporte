@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field
 
 from agente.llm import llm
 
+from langchain_core.messages import BaseMessage
+
 
 class Classificacao(BaseModel):
 
@@ -54,24 +56,22 @@ Histórico da conversa:
 ])
 
 
-def formatar_historico(historico: list[tuple[str, str]] | None) -> str:
-    """historico = [("cliente", "..."), ("assistente", "..."), ...]"""
+def formatar_historico(historico: list[BaseMessage] | None) -> str:
     if not historico:
         return "(conversa nova)"
-    return "\n".join(f"{autor}: {texto}" for autor, texto in historico)
+    return "\n".join(
+        f"{'cliente' if m.type == 'human' else 'assistente'}: {m.content}" for m in historico
+    )
 
 
 def cadeia_roteador():
     return PROMPT | llm().with_structured_output(Classificacao)
 
-
-def classificar(mensagem: str, historico: list[tuple[str, str]] | None = None) -> Classificacao:
+def classificar(mensagem: str, historico: list[BaseMessage] | None = None) -> Classificacao:
     return cadeia_roteador().invoke({
         "mensagem": mensagem,
         "historico": formatar_historico(historico),
     })
-
-
 if __name__ == "__main__":
     import sys
 
