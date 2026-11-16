@@ -23,3 +23,5 @@ EMBEDDING_DIM = 768
 
 RERANKER_MODEL = os.getenv("RERANKER_MODEL", "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1")
 RERANK_MIN_SCORE = float(os.getenv("RERANK_MIN_SCORE", "0.10"))
+
+LLM_MODEL = os.getenv("LLM_MODEL", "gemini-3.5-flash-lite")
