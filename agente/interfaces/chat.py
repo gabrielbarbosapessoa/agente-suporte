@@ -3,8 +3,8 @@ import uuid
 
 from langchain_core.messages import HumanMessage
 
-from agente.grafo import criar_grafo
-from agente.memoria import checkpointer
+from agente.fluxo.grafo import criar_grafo
+from agente.infra.memoria import checkpointer
 
 
 def main() -> None:

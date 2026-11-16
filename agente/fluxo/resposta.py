@@ -3,7 +3,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 
-from agente.llm import llm
+from agente.infra.llm import llm
 
 SEM_PEDIDO = "(nenhum)"
 
@@ -51,7 +51,7 @@ def cadeia_resposta():
 if __name__ == "__main__":
     import sys
 
-    from agente.busca import BuscaPoliticas
+    from agente.rag.busca import BuscaPoliticas
 
     pergunta = " ".join(sys.argv[1:]) or "Posso devolver um produto se me arrependi?"
 

@@ -5,8 +5,8 @@ from langchain_core.messages import AIMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
-from agente.memoria import checkpointer
-from agente.solicitacoes import listar_pendentes, registrar_decisao
+from agente.infra.memoria import checkpointer
+from agente.repositorios.solicitacoes import listar_pendentes, registrar_decisao
 
 
 class EstadoAprovacao(TypedDict, total=False):
@@ -41,7 +41,7 @@ def registrar(estado: EstadoAprovacao) -> dict:
                  "Se quiser, posso abrir um chamado para a equipe explicar o motivo.")
 
 
-    from agente.grafo import criar_grafo  
+    from agente.fluxo.grafo import criar_grafo  
     criar_grafo(checkpointer()).update_state(
         {"configurable": {"thread_id": estado["thread_cliente"]}},
         {"mensagens": [AIMessage(content=texto)], "resposta": texto},

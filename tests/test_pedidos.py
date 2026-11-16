@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from agente.pedidos import buscar_pedido
+from agente.repositorios.pedidos import buscar_pedido
 
 
 def test_busca_pedido_do_proprio_cliente():

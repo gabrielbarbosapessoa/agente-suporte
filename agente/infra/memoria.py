@@ -19,7 +19,7 @@ def checkpointer() -> PostgresSaver:
         open=True,
     )
     atexit.register(pool.close)
-    serde = JsonPlusSerializer(allowed_msgpack_modules=[("agente.roteador", "Classificacao")])
+    serde = JsonPlusSerializer(allowed_msgpack_modules=[("agente.fluxo.roteador", "Classificacao")])
     saver = PostgresSaver(pool, serde=serde)
     saver.setup()  
     return saver

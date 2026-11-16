@@ -3,8 +3,8 @@ from decimal import Decimal
 
 import pytest
 
-from agente import regras
-from agente.modelos import Pedido
+from agente.dominio import regras
+from agente.dominio.modelos import Pedido
 
 HOJE = date(2026, 11, 16)  # segunda-feira fixa → teste sempre igual
 

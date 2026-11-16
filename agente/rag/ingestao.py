@@ -4,8 +4,8 @@ from pathlib import Path
 from langchain_core.documents import Document
 from langchain_text_splitters import MarkdownHeaderTextSplitter
 
-from agente.db import conexao
-from agente.llm import embeddings
+from agente.infra.db import conexao
+from agente.infra.llm import embeddings
 
 PASTA_POLITICAS = Path("data/politicas")
 

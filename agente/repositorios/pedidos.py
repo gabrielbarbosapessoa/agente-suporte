@@ -1,5 +1,5 @@
-from agente.db import conexao
-from agente.modelos import ItemPedido, Pedido
+from agente.infra.db import conexao
+from agente.dominio.modelos import ItemPedido, Pedido
 
 
 

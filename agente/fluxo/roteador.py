@@ -3,7 +3,7 @@ from typing import Literal
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
-from agente.llm import llm
+from agente.infra.llm import llm
 
 from langchain_core.messages import BaseMessage
 

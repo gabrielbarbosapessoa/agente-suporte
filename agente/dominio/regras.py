@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel
 
-from agente.modelos import Pedido
+from agente.dominio.modelos import Pedido
 
 FUSO_LOJA = ZoneInfo("America/Sao_Paulo")
 

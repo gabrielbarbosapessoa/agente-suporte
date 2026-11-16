@@ -2,10 +2,10 @@ from langchain_core.callbacks import CallbackManagerForRetrieverRun
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 
-from agente.db import conexao
-from agente.llm import embeddings
+from agente.infra.db import conexao
+from agente.infra.llm import embeddings
 
-from agente.rerank import reranquear
+from agente.rag.rerank import reranquear
 
 SQL_BUSCA_HIBRIDA = """
 WITH

@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from agente.db import conexao
+from agente.infra.db import conexao
 
 
 def solicitacao_ativa(pedido_id: int) -> dict | None:

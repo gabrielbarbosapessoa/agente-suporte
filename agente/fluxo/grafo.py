@@ -6,16 +6,16 @@ from langchain_core.messages import AIMessage, AnyMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 
-from agente.busca import BuscaPoliticas
+from agente.rag.busca import BuscaPoliticas
 from agente.config import JANELA_HISTORICO
-from agente.pedidos import buscar_pedido
-from agente.regras import analisar_pedido
-from agente.resposta import cadeia_resposta
-from agente.roteador import Classificacao, classificar
+from agente.repositorios.pedidos import buscar_pedido
+from agente.dominio.regras import analisar_pedido
+from agente.fluxo.resposta import cadeia_resposta
+from agente.fluxo.roteador import Classificacao, classificar
 
 from langchain_core.runnables import RunnableConfig
-from agente.aprovacao import iniciar_aprovacao
-from agente.solicitacoes import criar_solicitacao, solicitacao_ativa
+from agente.fluxo.aprovacao import iniciar_aprovacao
+from agente.repositorios.solicitacoes import criar_solicitacao, solicitacao_ativa
 
 
 class Estado(TypedDict, total=False):
