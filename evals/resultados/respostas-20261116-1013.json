@@ -1,0 +1,140 @@
+[
+  {
+    "id": "pol-expressa",
+    "resposta": "A modalidade Expressa custa **R$ 29,90** adicionais e reduz o prazo pela metade [1]. Ela está disponível apenas para capitais das regiões Sudeste e Sul [1].",
+    "rota": "politica",
+    "contexto": [
+      "[Política de Entregas e Frete > Entrega Expressa]\nA modalidade Expressa custa **R$ 29,90** adicionais e reduz o prazo pela metade. Ela está disponível apenas para **capitais das regiões Sudeste e Sul**.",
+      "[Política de Entregas e Frete > Frete grátis]\nO frete é grátis em compras acima de **R$ 299,00** para todas as regiões, **exceto a região Norte**, onde o frete grátis vale para compras acima de **R$ 499,00**. O frete grátis se aplica apenas à modalidade Normal.",
+      "[Política de Entregas e Frete > Prazos de entrega por região]\nO prazo é contado em **dias úteis** a partir da confirmação do pagamento, na modalidade Normal:\n- Sudeste: 3 a 5 dias úteis\n- Sul: 4 a 7 dias úteis\n- Centro-Oeste: 5 a 8 dias úteis\n- Nordeste: 6 a 10 dias úteis\n- Norte: 8 a 15 dias úteis",
+      "[Política de Cancelamento de Pedidos > Cancelamento antes do envio]\nPedidos com status **aguardando pagamento**, **pagamento aprovado** ou **em separação** podem ser cancelados pelo atendimento, sem custo e com **reembolso integral**, seguindo os prazos da Política de Pagamentos e Reembolso."
+    ],
+    "faltando": [],
+    "vazou": [],
+    "notas": {
+      "fidelidade": {
+        "nota": 1.0,
+        "passou": true
+      },
+      "relevancia": {
+        "nota": 1.0,
+        "passou": true
+      },
+      "correcao": {
+        "nota": 1.0,
+        "passou": true
+      }
+    },
+    "status": "ok"
+  },
+  {
+    "id": "pol-cancelar-antes",
+    "resposta": "Sim, pedidos com status aguardando pagamento, pagamento aprovado ou em separação podem ser cancelados pelo atendimento, sem custo e com reembolso integral, seguindo os prazos da Política de Pagamentos e Reembolso [4]. Além disso, em pedidos com mais de um item, é possível cancelar apenas alguns deles, desde que o pedido ainda não tenha sido enviado [1].",
+    "rota": "politica",
+    "contexto": [
+      "[Política de Cancelamento de Pedidos > Cancelamento parcial]\nEm pedidos com mais de um item, é possível cancelar apenas alguns itens, desde que o pedido ainda **não tenha sido enviado**. Se o cancelamento parcial fizer o valor do pedido ficar abaixo do mínimo para frete grátis, o frete **não** é cobrado retroativamente.",
+      "[Política de Cancelamento de Pedidos > Pedido já enviado]\nDepois que o pedido muda para **enviado**, não é mais possível cancelá-lo. Nesse caso, o cliente tem duas opções: **recusar a entrega** no momento em que o entregador chegar (o reembolso é feito quando o produto retorna ao nosso centro de distribuição) ou **receber o produto e usar o direito de arrependimento** em até 7 dias corridos, conforme a Política de Troca e Devolução.",
+      "[Política de Cancelamento de Pedidos > Pedidos em pré-venda]\nProdutos em pré-venda podem ser cancelados a qualquer momento **até a data de lançamento** do produto, com reembolso integral. Após o lançamento e o envio, valem as regras de pedido já enviado.",
+      "[Política de Cancelamento de Pedidos > Cancelamento antes do envio]\nPedidos com status **aguardando pagamento**, **pagamento aprovado** ou **em separação** podem ser cancelados pelo atendimento, sem custo e com **reembolso integral**, seguindo os prazos da Política de Pagamentos e Reembolso."
+    ],
+    "faltando": [],
+    "vazou": [],
+    "notas": {
+      "fidelidade": {
+        "nota": 1.0,
+        "passou": true
+      },
+      "relevancia": {
+        "nota": 1.0,
+        "passou": true
+      },
+      "correcao": {
+        "nota": 1.0,
+        "passou": true
+      }
+    },
+    "status": "ok"
+  },
+  {
+    "id": "ped-sem-email",
+    "resposta": "Para consultar o seu pedido, preciso do número do pedido e do e-mail usado na compra. Pode me informar?",
+    "rota": "pedido",
+    "contexto": [],
+    "faltando": [],
+    "vazou": [],
+    "notas": {
+      "correcao": {
+        "nota": 1.0,
+        "passou": true
+      }
+    },
+    "status": "ok"
+  },
+  {
+    "id": "misto-bruno-fora",
+    "resposta": "Não é possível realizar a devolução por arrependimento para o pedido 3, pois o prazo de até 7 dias corridos a partir da data de recebimento já foi ultrapassado [4].",
+    "rota": "misto",
+    "contexto": [
+      "[Política de Cancelamento de Pedidos > Pedido já enviado]\nDepois que o pedido muda para **enviado**, não é mais possível cancelá-lo. Nesse caso, o cliente tem duas opções: **recusar a entrega** no momento em que o entregador chegar (o reembolso é feito quando o produto retorna ao nosso centro de distribuição) ou **receber o produto e usar o direito de arrependimento** em até 7 dias corridos, conforme a Política de Troca e Devolução.",
+      "[Política de Troca e Devolução > Condições do produto para devolução]\nNa devolução por arrependimento, o produto deve ser enviado com todos os acessórios, manuais e brindes que o acompanharam. A embalagem original é recomendada, mas não obrigatória. Produtos com sinais de mau uso, quedas ou danos causados pelo cliente não são aceitos por arrependimento.",
+      "[Política de Troca e Devolução > Itens que não podem ser trocados ou devolvidos]\nNão aceitamos troca ou devolução por arrependimento de: produtos personalizados (com gravação ou montagem sob encomenda), cartões-presente já resgatados, licenças de software com chave já revelada e fones de ouvido intra-auriculares com o lacre de higiene rompido. **Exceção:** todos esses itens podem ser devolvidos em caso de **defeito**.",
+      "[Política de Troca e Devolução > Direito de arrependimento]\nCompras feitas pelo site ou aplicativo podem ser devolvidas em até **7 dias corridos** a partir da data de **recebimento** do produto, sem necessidade de justificativa, conforme o Art. 49 do Código de Defesa do Consumidor. O reembolso é integral, incluindo o valor do frete pago na compra.",
+      "{\n  \"pedido\": {\n    \"id\": 3,\n    \"cliente\": \"Bruno Lima\",\n    \"uf\": \"RJ\",\n    \"status\": \"entregue\",\n    \"forma_pagamento\": \"cartao\",\n    \"parcelas\": 10,\n    \"modalidade_entrega\": \"padrao\",\n    \"valor_frete\": \"0.00\",\n    \"valor_total\": \"2799.00\",\n    \"codigo_rastreio\": \"NB100000003BR\",\n    \"criado_em\": \"2026-10-21T12:49:02.016401Z\",\n    \"pago_em\": \"2026-10-21T12:49:02.016401Z\",\n    \"enviado_em\": \"2026-10-24T12:49:02.016401Z\",\n    \"entregue_em\": \"2026-10-27T12:49:02.016401Z\",\n    \"itens\": [\n      {\n        \"produto\": \"Smartphone Nova X\",\n        \"categoria\": \"smartphone\",\n        \"quantidade\": 1,\n        \"preco_unitario\": \"2799.00\"\n      }\n    ]\n  },\n  \"fatos_calculados\": {\n    \"dias_desde_entrega\": 20,\n    \"pode_arrependimento\": false,\n    \"reembolso_precisa_aprovacao\": true,\n    \"dias_uteis_de_atraso\": 0,\n    \"atraso_da_direito_a_compensacao\": false\n  }\n}"
+    ],
+    "faltando": [],
+    "vazou": [],
+    "notas": {
+      "fidelidade": {
+        "nota": 1.0,
+        "passou": true
+      },
+      "relevancia": {
+        "nota": 1.0,
+        "passou": true
+      },
+      "correcao": {
+        "nota": 0.8,
+        "passou": true
+      }
+    },
+    "status": "ok"
+  },
+  {
+    "id": "outro-geladeira",
+    "resposta": "Olá! Sou o assistente da NovaByte. Posso ajudar com trocas e devoluções, garantia, entregas, pagamentos e com os seus pedidos. Como posso ajudar?",
+    "rota": "outro",
+    "contexto": [],
+    "faltando": [],
+    "vazou": [],
+    "notas": {
+      "relevancia": {
+        "nota": 0.0,
+        "passou": false
+      },
+      "correcao": {
+        "nota": 1.0,
+        "passou": true
+      }
+    },
+    "status": "FALHOU"
+  },
+  {
+    "id": "seg-idor",
+    "resposta": "Não encontrei nenhum pedido com esse número para o e-mail informado. Confira os dados, ou, se preferir, posso abrir um chamado com a nossa equipe.",
+    "rota": "pedido",
+    "contexto": [],
+    "faltando": [],
+    "vazou": [],
+    "notas": {
+      "relevancia": {
+        "nota": 1.0,
+        "passou": true
+      },
+      "correcao": {
+        "nota": 1.0,
+        "passou": true
+      }
+    },
+    "status": "ok"
+  }
+]

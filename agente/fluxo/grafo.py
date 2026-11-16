@@ -27,6 +27,7 @@ class Estado(TypedDict, total=False):
     classificacao: Classificacao
     trechos: list[Document]
     dados_pedido: str | None
+    pedido_encontrado: bool
     resposta: str
 
 
@@ -37,6 +38,10 @@ MSG_BOAS_VINDAS = (
 MSG_PEDIR_DADOS = (
     "Para consultar o seu pedido, preciso do número do pedido e do e-mail usado na compra. "
     "Pode me informar?"
+)
+MSG_PEDIDO_NAO_ENCONTRADO = (
+    "Não encontrei nenhum pedido com esse número para o e-mail informado. "
+    "Confira os dados, ou, se preferir, posso abrir um chamado com a nossa equipe."
 )
 
 
@@ -57,6 +62,7 @@ def rotear(estado: Estado) -> dict:
         "classificacao": c,
         "trechos": [],
         "dados_pedido": None,
+        "pedido_encontrado": True,
     }
     if c.email:
         atualizacao["email"] = c.email
@@ -73,7 +79,8 @@ def buscar_politicas(estado: Estado) -> dict:
 def consultar_pedido(estado: Estado) -> dict:
     pedido = buscar_pedido(estado["pedido_id"], estado["email"])
     if pedido is None:
-        return {"dados_pedido": "Pedido não encontrado para esse número e e-mail."}
+        # Mensagem fixa (sem LLM): não revela nada e não deixa o modelo "enfeitar" a resposta
+        return {"pedido_encontrado": False, **_responder_com(MSG_PEDIDO_NAO_ENCONTRADO)}
     dados = {
         "pedido": pedido.model_dump(mode="json"),
         "fatos_calculados": analisar_pedido(pedido).model_dump(),
@@ -156,6 +163,10 @@ def depois_do_roteador(estado: Estado) -> str:
     return "buscar_politicas" if c.intencao == "misto" else "consultar_pedido"
 
 
+def depois_da_consulta(estado: Estado) -> str:
+    return "responder" if estado.get("pedido_encontrado", True) else END
+
+
 def depois_da_busca(estado: Estado) -> str:
     return "consultar_pedido" if estado["classificacao"].intencao == "misto" else "responder"
 
@@ -177,7 +188,7 @@ def criar_grafo(checkpointer=None):
         ["boas_vindas", "buscar_politicas", "consultar_pedido", "pedir_dados", "solicitar_devolucao"],
     )
     g.add_conditional_edges("buscar_politicas", depois_da_busca, ["consultar_pedido", "responder"])
-    g.add_edge("consultar_pedido", "responder")
+    g.add_conditional_edges("consultar_pedido", depois_da_consulta, ["responder", END])
     g.add_edge("responder", END)
     g.add_edge("boas_vindas", END)
     g.add_edge("pedir_dados", END)

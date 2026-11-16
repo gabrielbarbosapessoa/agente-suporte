@@ -1,0 +1,68 @@
+[
+  {
+    "id": "pol-arrependimento",
+    "resposta": "Você pode devolver o produto em até **7 dias corridos** a partir da data de recebimento, sem necessidade de justificativa [1].",
+    "faltando": [],
+    "vazou": [],
+    "notas": {
+      "fidelidade": {
+        "nota": 1.0,
+        "passou": true
+      },
+      "relevancia": {
+        "nota": 1.0,
+        "passou": true
+      },
+      "correcao": {
+        "nota": 1.0,
+        "passou": true
+      }
+    },
+    "passou": true
+  },
+  {
+    "id": "pol-garantia-legal",
+    "resposta": "O prazo da garantia legal para produtos duráveis, como os notebooks, é de **90 dias** contados a partir do recebimento [2].",
+    "faltando": [],
+    "vazou": [],
+    "notas": {
+      "fidelidade": {
+        "nota": 1.0,
+        "passou": true
+      },
+      "relevancia": {
+        "nota": 1.0,
+        "passou": true
+      },
+      "correcao": {
+        "nota": null,
+        "passou": false,
+        "erro": "429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and "
+      }
+    },
+    "passou": false
+  },
+  {
+    "id": "pol-reembolso-pix",
+    "resposta": "Para compras pagas com Pix, o reembolso é feito via Pix em até 5 dias úteis, contados a partir da aprovação da solicitação [1].",
+    "faltando": [],
+    "vazou": [],
+    "notas": {
+      "fidelidade": {
+        "nota": null,
+        "passou": false,
+        "erro": "429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and "
+      },
+      "relevancia": {
+        "nota": null,
+        "passou": false,
+        "erro": "429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and "
+      },
+      "correcao": {
+        "nota": 1.0,
+        "passou": true
+      }
+    },
+    "passou": false
+  }
+]
