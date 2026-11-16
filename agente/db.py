@@ -6,16 +6,19 @@ from psycopg_pool import ConnectionPool
 
 from agente.config import DATABASE_URL
 
+import atexit
 
 @lru_cache
 def get_pool() -> ConnectionPool:
-    return ConnectionPool(
+    pool = ConnectionPool(
         conninfo=DATABASE_URL,
         min_size=1,
         max_size=5,
         kwargs={"row_factory": dict_row},
-        open=True
+        open=True,
     )
+    atexit.register(pool.close)  # fecha as conexões quando o programa termina
+    return pool
 
 @contextmanager
 def conexao():

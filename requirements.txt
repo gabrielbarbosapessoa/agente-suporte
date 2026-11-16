@@ -3,3 +3,8 @@ psycopg-pool
 python-dotenv
 pydantic
 pytest
+tzdata
+langchain-core
+langchain-text-splitters
+langchain-google-genai
+sentence-transformers
