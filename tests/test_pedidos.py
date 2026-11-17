@@ -16,7 +16,6 @@ def test_email_ignora_maiusculas():
 
 
 def test_pedido_de_outro_cliente_nao_aparece():
-    # Ana tentando ver o pedido do Bruno (IDOR)
     assert buscar_pedido(3, "ana.souza@example.com") is None
 
 

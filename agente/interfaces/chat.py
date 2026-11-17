@@ -11,6 +11,9 @@ from agente.config import RERANKER_MODEL
 from agente.rag.rerank import _modelo as carregar_reranker
 from agente.seguranca.guardrails import mascarar_dados_sensiveis
 
+from agente.config import PROMPT_GUARD_ATIVO, RERANKER_MODEL
+from agente.seguranca.prompt_guard import carregar_prompt_guard
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -21,16 +24,16 @@ def main() -> None:
     thread_id = args.thread or f"sessao-{uuid.uuid4().hex[:8]}"
     config = {
         "configurable": {"thread_id": thread_id},
-        # Aparecem no LangSmith: dá pra filtrar todas as execuções de uma conversa
         "run_name": "atendimento",
         "tags": ["chat"],
         "metadata": {"thread_id": thread_id},
     }
     agente = criar_grafo(checkpointer())
 
-    # Warm-up: carrega o reranker (≈2 GB) ANTES da primeira pergunta, e não no meio dela
     print("Carregando modelos...")
-    carregar_reranker(RERANKER_MODEL)  # aquecer: o lru_cache guarda o modelo para as próximas chamadas
+    carregar_reranker(RERANKER_MODEL)
+    if PROMPT_GUARD_ATIVO:
+        carregar_prompt_guard()
 
     print(f"Conversa: {thread_id}  (digite 'sair' para encerrar)\n")
     salvo = agente.get_state(config).values
@@ -54,7 +57,7 @@ def main() -> None:
             print(f"  [{' → '.join(caminho)}]")
         print(f"NovaByte: {estado['resposta']}")
 
-        # As citações [1], [2]... só fazem sentido se o cliente puder ver a que se referem
+
         trechos = estado.get("trechos") or []
         if trechos and "responder" in caminho:
             print("Fontes:")
@@ -67,5 +70,4 @@ if __name__ == "__main__":
     try:
         main()
     finally:
-        # Os traces vão para o LangSmith em segundo plano: espera terminar de enviar antes de fechar
         wait_for_all_tracers()

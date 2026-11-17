@@ -109,7 +109,6 @@ def buscar_politicas(estado: Estado) -> dict:
 def consultar_pedido(estado: Estado) -> dict:
     pedido = buscar_pedido_rastreado(estado["pedido_id"], estado["email"])
     if pedido is None:
-        # Mensagem fixa (sem LLM): não revela nada e não deixa o modelo "enfeitar" a resposta
         return {"pedido_encontrado": False, **_responder_com(MSG_PEDIDO_NAO_ENCONTRADO)}
     dados = {
         "pedido": pedido.model_dump(mode="json"),
@@ -155,7 +154,7 @@ def solicitar_devolucao(estado: Estado, config: RunnableConfig) -> dict:
 
     if analise.reembolso_precisa_aprovacao:
         sid = criar_solicitacao(pedido.id, pedido.valor_total, "pendente_aprovacao", thread_cliente)
-        iniciar_aprovacao(sid, pedido.id, str(pedido.valor_total), thread_cliente)  # ⏸️ HITL
+        iniciar_aprovacao(sid, pedido.id, str(pedido.valor_total), thread_cliente)
         return _responder_com(
             f"Abri a solicitação de devolução #{sid} do pedido {pedido.id}. Como o reembolso "
             f"(R$ {pedido.valor_total}) é acima de R$ 1.000, ele passa pela aprovação do "

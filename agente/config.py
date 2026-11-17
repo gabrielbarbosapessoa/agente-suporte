@@ -27,3 +27,7 @@ RERANK_MIN_SCORE = float(os.getenv("RERANK_MIN_SCORE", "0.0"))
 LLM_MODEL = os.getenv("LLM_MODEL", "gemini-3.5-flash-lite")
 
 JANELA_HISTORICO = 6
+
+PROMPT_GUARD_MODEL = os.getenv("PROMPT_GUARD_MODEL", "meta-llama/Llama-Prompt-Guard-2-86M")
+PROMPT_GUARD_LIMIAR = float(os.getenv("PROMPT_GUARD_LIMIAR", "0.5"))
+PROMPT_GUARD_ATIVO = os.getenv("PROMPT_GUARD_ATIVO", "true").lower() == "true"

@@ -1,4 +1,5 @@
-
+from agente.config import PROMPT_GUARD_ATIVO, PROMPT_GUARD_LIMIAR
+from agente.seguranca.prompt_guard import probabilidade_de_ataque
 import re
 from dataclasses import dataclass
 
@@ -59,6 +60,8 @@ def verificar_entrada(texto: str) -> ResultadoEntrada:
         return ResultadoEntrada(mascarado, True, "mensagem_longa")
     if _INJECAO.search(texto):
         return ResultadoEntrada(mascarado, True, "prompt_injection")
+    if PROMPT_GUARD_ATIVO and probabilidade_de_ataque(mascarado) >= PROMPT_GUARD_LIMIAR:
+        return ResultadoEntrada(mascarado, True, "prompt_injection_modelo")
     return ResultadoEntrada(mascarado, False)
 
 

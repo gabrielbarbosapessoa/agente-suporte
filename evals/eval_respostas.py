@@ -15,7 +15,6 @@ from pathlib import Path
 
 
 os.environ.setdefault("DEEPEVAL_TELEMETRY_OPT_OUT", "YES")
-# Traces do eval ficam num projeto separado, sem misturar com as conversas
 os.environ.setdefault("LANGSMITH_PROJECT", "agente-suporte-evals")
 os.environ.setdefault("DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", "300")
 os.environ.setdefault("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", "1200")
@@ -31,8 +30,8 @@ from evals.comum import carregar_casos, historico_como_mensagens, pausar
 
 JUIZ_MODELO = os.getenv("EVAL_JUIZ_MODEL", LLM_MODEL)
 LIMITE = int(os.getenv("EVAL_LIMITE", "0")) or None
-IDS = [i.strip() for i in os.getenv("EVAL_IDS", "").split(",") if i.strip()]  # ex.: "pol-expressa,seg-idor"
-SEM_JUIZ = os.getenv("EVAL_SEM_JUIZ") == "1"  # só roda o agente + checagens de texto (economiza cota)
+IDS = [i.strip() for i in os.getenv("EVAL_IDS", "").split(",") if i.strip()]
+SEM_JUIZ = os.getenv("EVAL_SEM_JUIZ") == "1"
 PASTA_RESULTADOS = Path(__file__).parent / "resultados"
 
 
@@ -67,7 +66,6 @@ def medir(metrica, teste, tentativas: int = 3) -> None:
             metrica.measure(teste)
             return
         except Exception as erro:
-            # 429 = limite de requisições; 503 = modelo sobrecarregado. Os dois passam com o tempo.
             limite = any(t in str(erro) for t in ("429", "RESOURCE_EXHAUSTED", "503", "UNAVAILABLE"))
             if not limite or tentativa == tentativas:
                 raise
@@ -109,7 +107,7 @@ def avaliar_caso(grafo, metricas: dict, caso: dict) -> dict:
             try:
                 medir(metrica, teste)
                 notas[nome] = {"nota": round(metrica.score, 2), "passou": metrica.is_successful()}
-            except Exception as erro:  # o juiz também falha (timeout, limite da API...)
+            except Exception as erro:
                 notas[nome] = {"nota": None, "passou": None, "erro": str(erro)[:120]}
 
     reprovou = bool(faltando or vazou) or any(n["passou"] is False for n in notas.values())

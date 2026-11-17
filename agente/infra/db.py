@@ -17,7 +17,7 @@ def get_pool() -> ConnectionPool:
         kwargs={"row_factory": dict_row},
         open=True,
     )
-    atexit.register(pool.close)  # fecha as conexões quando o programa termina
+    atexit.register(pool.close)
     return pool
 
 @contextmanager

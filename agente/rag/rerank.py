@@ -9,11 +9,9 @@ from agente.config import RERANK_MIN_SCORE, RERANKER_MODEL
 
 @lru_cache
 def _modelo(nome: str):
-    # Imports pesados (PyTorch) só quando o rerank é usado de verdade
     import torch
     from sentence_transformers import CrossEncoder
 
-    # Sigmoid transforma a nota bruta (logit) em 0 a 1 → dá pra usar um corte fixo
     return CrossEncoder(nome, activation_fn=torch.nn.Sigmoid())
 
 

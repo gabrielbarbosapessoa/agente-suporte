@@ -6,11 +6,11 @@ import pytest
 from agente.dominio import regras
 from agente.dominio.modelos import Pedido
 
-HOJE = date(2026, 11, 16)  # segunda-feira fixa → teste sempre igual
+HOJE = date(2026, 11, 16)
 
 
 def test_dias_uteis_pula_fim_de_semana():
-    assert regras.dias_uteis(date(2026, 11, 13), HOJE) == 1  # sexta → segunda
+    assert regras.dias_uteis(date(2026, 11, 13), HOJE) == 1
 
 
 @pytest.mark.parametrize("dias, esperado", [(0, True), (7, True), (8, False)])
@@ -24,7 +24,7 @@ def test_aprovacao_acima_de_mil(valor, esperado):
 
 
 def test_expressa_e_metade_do_prazo():
-    assert regras.prazo_entrega("SP", "expressa") == 3  # 5 / 2 → 3
+    assert regras.prazo_entrega("SP", "expressa") == 3
 
 
 def _ha(dias: int) -> datetime:
