@@ -2,15 +2,15 @@ from functools import lru_cache
 
 from langsmith import traceable
 
-from agente.config import PROMPT_GUARD_MODEL
+from agente.config import PROMPT_GUARD_MODEL, PROMPT_GUARD_REVISION
 
 
 @lru_cache(maxsize=1)
 def carregar_prompt_guard(nome: str = PROMPT_GUARD_MODEL):
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-    tokenizer = AutoTokenizer.from_pretrained(nome)
-    modelo = AutoModelForSequenceClassification.from_pretrained(nome)
+    tokenizer = AutoTokenizer.from_pretrained(nome, revision=PROMPT_GUARD_REVISION)
+    modelo = AutoModelForSequenceClassification.from_pretrained(nome, revision=PROMPT_GUARD_REVISION)
     modelo.eval()
     return tokenizer, modelo
 

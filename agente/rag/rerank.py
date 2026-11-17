@@ -4,7 +4,7 @@ from functools import lru_cache
 from langchain_core.documents import Document
 from langsmith import traceable
 
-from agente.config import RERANK_MIN_SCORE, RERANKER_MODEL
+from agente.config import RERANK_MIN_SCORE, RERANKER_MODEL, RERANKER_REVISION
 
 
 @lru_cache
@@ -12,7 +12,7 @@ def _modelo(nome: str):
     import torch
     from sentence_transformers import CrossEncoder
 
-    return CrossEncoder(nome, activation_fn=torch.nn.Sigmoid())
+    return CrossEncoder(nome, revision=RERANKER_REVISION, activation_fn=torch.nn.Sigmoid())
 
 
 @traceable(name="rerank", run_type="chain")

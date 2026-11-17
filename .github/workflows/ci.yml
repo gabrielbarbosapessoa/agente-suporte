@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: novabyte
+          POSTGRES_PASSWORD: novabyte
+          POSTGRES_DB: novabyte
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U novabyte -d novabyte"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      POSTGRES_USER: novabyte
+      POSTGRES_PASSWORD: novabyte
+      POSTGRES_DB: novabyte
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      PGPASSWORD: novabyte
+      LANGSMITH_TRACING: "false"
+      PROMPT_GUARD_ATIVO: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Instalar dependências
+        run: |
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -r requirements-dev.txt pip-audit
+
+      - name: Criar banco
+        run: |
+          for arquivo in db/*.sql; do
+            psql -h localhost -U novabyte -d novabyte -v ON_ERROR_STOP=1 -f "$arquivo"
+          done
+
+      - name: Testes
+        run: pytest -ra
+
+      - name: Vulnerabilidades nas bibliotecas
+        run: pip-audit
+
+  seguranca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Análise do código
+        run: |
+          pip install bandit
+          bandit -r agente -ll
+
+      - name: Segredos no histórico do git
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir imagem
+        run: docker build -t agente-suporte .
