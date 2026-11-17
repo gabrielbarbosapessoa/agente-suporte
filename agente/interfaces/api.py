@@ -145,53 +145,6 @@ def enviar_mensagem_stream(thread_id: ThreadId, corpo: NovaMensagem) -> Streamin
     entrada = {"mensagens": [HumanMessage(content=mascarar_dados_sensiveis(corpo.mensagem))]}
 
     def gerar():
-        caminho = []
-        try:
-            for modo, dados in agente.stream(entrada, config, stream_mode=["updates", "messages"]):
-                if modo == "updates":
-                    for no in dados:
-                        caminho.append(no)
-                        yield _evento("passo", {"no": no})
-                else:
-                    pedaco, meta = dados
-                    texto = _texto(pedaco)
-                    if meta.get("langgraph_node") == "responder" and texto:
-                        yield _evento("token", {"texto": texto})
-
-            estado = agente.get_state(config).values
-            fontes = []
-            if "responder" in caminho:
-                fontes = [
-                    {"documento": d.metadata["documento"], "secao": d.metadata["secao"]}
-                    for d in estado.get("trechos") or []
-                ]
-            yield _evento("fim", {"resposta": estado["resposta"], "caminho": caminho, "fontes": fontes})
-        except Exception:
-            yield _evento("erro", {"detalhe": "Não foi possível processar sua mensagem agora."})
-
-    return StreamingResponse(gerar(), media_type="text/event-stream")
-
-
-def _evento(tipo: str, dados: dict) -> str:
-    return f"event: {tipo}\ndata: {json.dumps(dados, ensure_ascii=False)}\n\n"
-
-
-def _texto(pedaco) -> str:
-    if isinstance(pedaco.content, str):
-        return pedaco.content
-    return "".join(p.get("text", "") for p in pedaco.content if isinstance(p, dict))
-
-
-@app.post(
-    "/conversas/{thread_id}/mensagens/stream",
-    dependencies=[Depends(exigir_chave), Depends(limitar_uso)],
-)
-def enviar_mensagem_stream(thread_id: ThreadId, corpo: NovaMensagem) -> StreamingResponse:
-    agente = app.state.agente
-    config = _config(thread_id)
-    entrada = {"mensagens": [HumanMessage(content=mascarar_dados_sensiveis(corpo.mensagem))]}
-
-    def gerar():
         inicio = time.perf_counter()
         primeiro_token = None
         caminho = []
