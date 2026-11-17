@@ -13,6 +13,8 @@ esquema_chave = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 def exigir_chave(chave: str | None = Security(esquema_chave)) -> None:
+    if config.DEMO_PUBLICA:
+        return
     if not chave or not config.API_KEY or not hmac.compare_digest(chave, config.API_KEY):
         raise HTTPException(status_code=401, detail="Chave de API inválida ou ausente")
 

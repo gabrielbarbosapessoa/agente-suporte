@@ -12,6 +12,7 @@ CHAVE = "chave-de-teste"
 @pytest.fixture
 def cliente(monkeypatch):
     monkeypatch.setattr(config, "API_KEY", CHAVE)
+    monkeypatch.setattr(config, "DEMO_PUBLICA", False)
     return TestClient(app)
 
 
@@ -61,3 +62,14 @@ def test_limite_diario_vale_para_todos():
     with pytest.raises(HTTPException) as erro:
         limitador.registrar("3.3.3.3")
     assert "limite" in erro.value.detail
+
+
+def test_modo_demo_dispensa_chave(cliente, monkeypatch):
+    monkeypatch.setattr(config, "DEMO_PUBLICA", True)
+    assert cliente.post("/conversas").status_code == 201
+
+
+def test_pagina_do_chat(cliente):
+    resposta = cliente.get("/chat")
+    assert resposta.status_code == 200
+    assert "text/html" in resposta.headers["content-type"]

@@ -36,4 +36,5 @@ PROMPT_GUARD_ATIVO = os.getenv("PROMPT_GUARD_ATIVO", "true").lower() == "true"
 API_KEY = os.getenv("API_KEY")
 LIMITE_POR_MINUTO = int(os.getenv("LIMITE_POR_MINUTO", "5"))
 LIMITE_DIARIO_MENSAGENS = int(os.getenv("LIMITE_DIARIO_MENSAGENS", "200"))
+DEMO_PUBLICA = os.getenv("DEMO_PUBLICA", "false").lower() == "true"
 DOCS_ATIVO = os.getenv("DOCS_ATIVO", "true").lower() == "true"
