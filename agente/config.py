@@ -31,3 +31,7 @@ JANELA_HISTORICO = 6
 PROMPT_GUARD_MODEL = os.getenv("PROMPT_GUARD_MODEL", "meta-llama/Llama-Prompt-Guard-2-86M")
 PROMPT_GUARD_LIMIAR = float(os.getenv("PROMPT_GUARD_LIMIAR", "0.5"))
 PROMPT_GUARD_ATIVO = os.getenv("PROMPT_GUARD_ATIVO", "true").lower() == "true"
+API_KEY = os.getenv("API_KEY")
+LIMITE_POR_MINUTO = int(os.getenv("LIMITE_POR_MINUTO", "5"))
+LIMITE_DIARIO_MENSAGENS = int(os.getenv("LIMITE_DIARIO_MENSAGENS", "200"))
+DOCS_ATIVO = os.getenv("DOCS_ATIVO", "true").lower() == "true"

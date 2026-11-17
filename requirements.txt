@@ -2,7 +2,6 @@ psycopg[binary]
 psycopg-pool
 python-dotenv
 pydantic
-pytest
 tzdata
 langchain-core
 langchain-text-splitters
@@ -10,5 +9,5 @@ langchain-google-genai
 sentence-transformers
 langgraph
 langgraph-checkpoint-postgres
-deepeval>=4.3
-portalocker[win32]; sys_platform == "win32"
+fastapi
+uvicorn[standard]
