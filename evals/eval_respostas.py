@@ -15,6 +15,8 @@ from pathlib import Path
 
 
 os.environ.setdefault("DEEPEVAL_TELEMETRY_OPT_OUT", "YES")
+# Traces do eval ficam num projeto separado, sem misturar com as conversas
+os.environ.setdefault("LANGSMITH_PROJECT", "agente-suporte-evals")
 os.environ.setdefault("DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", "300")
 os.environ.setdefault("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", "1200")
 

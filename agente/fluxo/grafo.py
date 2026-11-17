@@ -2,8 +2,9 @@ import json
 from typing import Annotated, TypedDict
 
 from langchain_core.documents import Document
-from langchain_core.messages import AIMessage, AnyMessage
+from langchain_core.messages import AIMessage, AnyMessage, HumanMessage
 from langgraph.graph import END, START, StateGraph
+from langsmith import traceable
 from langgraph.graph.message import add_messages
 
 from agente.rag.busca import BuscaPoliticas
@@ -12,10 +13,15 @@ from agente.repositorios.pedidos import buscar_pedido
 from agente.dominio.regras import analisar_pedido
 from agente.fluxo.resposta import cadeia_resposta
 from agente.fluxo.roteador import Classificacao, classificar
+from agente.seguranca.guardrails import verificar_entrada, verificar_saida
 
 from langchain_core.runnables import RunnableConfig
 from agente.fluxo.aprovacao import iniciar_aprovacao
 from agente.repositorios.solicitacoes import criar_solicitacao, solicitacao_ativa
+
+
+buscar_pedido_rastreado = traceable(buscar_pedido, name="buscar_pedido", run_type="tool")
+analisar_pedido_rastreado = traceable(analisar_pedido, name="analisar_pedido", run_type="chain")
 
 
 class Estado(TypedDict, total=False):
@@ -28,6 +34,7 @@ class Estado(TypedDict, total=False):
     trechos: list[Document]
     dados_pedido: str | None
     pedido_encontrado: bool
+    entrada_bloqueada: bool
     resposta: str
 
 
@@ -44,12 +51,35 @@ MSG_PEDIDO_NAO_ENCONTRADO = (
     "Confira os dados, ou, se preferir, posso abrir um chamado com a nossa equipe."
 )
 
+MSG_ENTRADA_BLOQUEADA = (
+    "Não consigo ajudar com esse pedido. Posso ajudar com trocas e devoluções, garantia, "
+    "entregas, pagamentos e com os seus pedidos."
+)
 
 def _responder_com(texto: str) -> dict:
-    """Toda resposta vira uma AIMessage no histórico."""
     return {"resposta": texto, "mensagens": [AIMessage(content=texto)]}
 
 
+def guardrail_entrada(estado: Estado) -> dict:
+    ultima = estado["mensagens"][-1]
+    r = verificar_entrada(ultima.content)
+    atualizacao = {
+        "mensagens": [HumanMessage(content=r.texto, id=ultima.id)],
+        "entrada_bloqueada": r.bloqueado,
+    }
+    if r.bloqueado:
+        atualizacao.update(_responder_com(MSG_ENTRADA_BLOQUEADA))
+    return atualizacao
+
+
+def guardrail_saida(estado: Estado) -> dict:
+    """Última camada: a resposta do LLM não pode vazar e-mail de terceiros nem dado sensível."""
+    resposta, problemas = verificar_saida(estado["resposta"], estado.get("email"))
+    if not problemas:
+        return {}
+    mensagem_original = estado["mensagens"][-1]
+    return {"resposta": resposta,
+            "mensagens": [AIMessage(content=resposta, id=mensagem_original.id)]}
 
 def rotear(estado: Estado) -> dict:
     mensagens = estado["mensagens"]
@@ -77,13 +107,13 @@ def buscar_politicas(estado: Estado) -> dict:
 
 
 def consultar_pedido(estado: Estado) -> dict:
-    pedido = buscar_pedido(estado["pedido_id"], estado["email"])
+    pedido = buscar_pedido_rastreado(estado["pedido_id"], estado["email"])
     if pedido is None:
         # Mensagem fixa (sem LLM): não revela nada e não deixa o modelo "enfeitar" a resposta
         return {"pedido_encontrado": False, **_responder_com(MSG_PEDIDO_NAO_ENCONTRADO)}
     dados = {
         "pedido": pedido.model_dump(mode="json"),
-        "fatos_calculados": analisar_pedido(pedido).model_dump(),
+        "fatos_calculados": analisar_pedido_rastreado(pedido).model_dump(),
     }
     return {"dados_pedido": json.dumps(dados, ensure_ascii=False, indent=2)}
 
@@ -98,7 +128,7 @@ def responder(estado: Estado) -> dict:
 
 def solicitar_devolucao(estado: Estado, config: RunnableConfig) -> dict:
     """Ação: abre a devolução. Mensagens fixas (sem LLM): resultado de ação tem que ser exato."""
-    pedido = buscar_pedido(estado["pedido_id"], estado["email"])
+    pedido = buscar_pedido_rastreado(estado["pedido_id"], estado["email"])
     if pedido is None:
         return _responder_com("Não encontrei esse pedido para o e-mail informado.")
 
@@ -109,7 +139,7 @@ def solicitar_devolucao(estado: Estado, config: RunnableConfig) -> dict:
             f"(situação: {ativa['status'].replace('_', ' ')})."
         )
 
-    analise = analisar_pedido(pedido)
+    analise = analisar_pedido_rastreado(pedido)
     if not analise.pode_arrependimento:
         return _responder_com(
             f"Não consigo abrir a devolução por arrependimento do pedido {pedido.id}: "
@@ -148,6 +178,8 @@ def pedir_dados(estado: Estado) -> dict:
     return _responder_com(MSG_PEDIR_DADOS)  
 
 
+def depois_da_entrada(estado: Estado) -> str:
+    return END if estado.get("entrada_bloqueada") else "rotear"
 
 def depois_do_roteador(estado: Estado) -> str:
     c = estado["classificacao"]
@@ -181,15 +213,19 @@ def criar_grafo(checkpointer=None):
     g.add_node("boas_vindas", boas_vindas)
     g.add_node("pedir_dados", pedir_dados)
     g.add_node("solicitar_devolucao", solicitar_devolucao)
+    g.add_node("guardrail_entrada", guardrail_entrada)
+    g.add_node("guardrail_saida", guardrail_saida)
 
-    g.add_edge(START, "rotear")
+    g.add_edge(START, "guardrail_entrada")
+    g.add_conditional_edges("guardrail_entrada", depois_da_entrada, ["rotear", END])
     g.add_conditional_edges(
         "rotear", depois_do_roteador,
         ["boas_vindas", "buscar_politicas", "consultar_pedido", "pedir_dados", "solicitar_devolucao"],
     )
     g.add_conditional_edges("buscar_politicas", depois_da_busca, ["consultar_pedido", "responder"])
     g.add_conditional_edges("consultar_pedido", depois_da_consulta, ["responder", END])
-    g.add_edge("responder", END)
+    g.add_edge("responder", "guardrail_saida")
+    g.add_edge("guardrail_saida", END)
     g.add_edge("boas_vindas", END)
     g.add_edge("pedir_dados", END)
     g.add_edge("solicitar_devolucao", END)

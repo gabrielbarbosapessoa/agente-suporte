@@ -2,6 +2,7 @@
 from functools import lru_cache
 
 from langchain_core.documents import Document
+from langsmith import traceable
 
 from agente.config import RERANK_MIN_SCORE, RERANKER_MODEL
 
@@ -16,6 +17,7 @@ def _modelo(nome: str):
     return CrossEncoder(nome, activation_fn=torch.nn.Sigmoid())
 
 
+@traceable(name="rerank", run_type="chain")
 def reranquear(
     pergunta: str,
     docs: list[Document],
