@@ -36,6 +36,7 @@ Agente de atendimento ao cliente para um e-commerce de eletrônicos, construído
 - **Human-in-the-loop**: reembolsos acima de R$ 1.000 pausam um grafo de aprovação (`interrupt`) até o financeiro decidir.
 - **Guardrails em camadas**: máscara de PII, regex e o classificador **Llama Prompt Guard 2** na entrada; proteção contra IDOR no acesso aos dados; limpeza de PII na saída.
 - **API FastAPI com streaming (SSE)**, tela de chat, chave de API, rate limit e limite diário de uso.
+- **Deploy na AWS com Terraform**: ECS Fargate atrás de um ALB, RDS PostgreSQL com pgvector em sub-redes isoladas, segredos no Secrets Manager e estado remoto no S3.
 - **Observabilidade e qualidade**: traces no LangSmith, evals de roteador, retrieval, respostas (LLM como juiz) e guardrails, e CI com testes, bandit, pip-audit e gitleaks.
 
 ## Arquitetura
@@ -74,7 +75,8 @@ O estado de cada conversa é salvo no Postgres por `thread_id` (checkpointer do 
 | API | FastAPI, SSE, uvicorn |
 | Observabilidade | LangSmith |
 | Evals | conjunto próprio + DeepEval (LLM como juiz) |
-| Infra | Docker, Docker Compose, GitHub Actions |
+| Infra | Docker, Docker Compose, GitHub Actions, Terraform |
+| Nuvem | AWS: VPC, ALB, ECS Fargate, RDS, ECR, Secrets Manager, CloudWatch, S3 |
 
 ## Resultados dos evals
 
@@ -125,6 +127,108 @@ Latência do Prompt Guard: cerca de 87 ms por mensagem, em CPU. Os ataques que p
 
 No CI: **bandit** (código), **pip-audit** (dependências) e **gitleaks** (segredos no histórico do git).
 
+## Deploy na AWS
+
+A aplicação foi publicada na AWS com toda a infraestrutura escrita em **Terraform** (pasta `infra/`), criada com `terraform apply`, testada e removida com `terraform destroy` na mesma sessão.
+
+```mermaid
+flowchart LR
+    U[Internet] -->|HTTP 80| ALB
+    subgraph VPC["VPC 10.0.0.0/16, duas zonas de disponibilidade"]
+        subgraph PUB["Sub-redes públicas"]
+            ALB[Application Load Balancer] -->|8000| ECS[ECS Fargate<br/>container do agente]
+        end
+        subgraph DB["Sub-redes do banco, sem rota para a internet"]
+            RDS[(RDS PostgreSQL 17<br/>+ pgvector)]
+        end
+        ECS -->|5432| RDS
+    end
+    ECS -->|443| EXT[Gemini · Hugging Face · LangSmith]
+    ECR[ECR] -.imagem.-> ECS
+    SM[Secrets Manager] -.segredos.-> ECS
+    ECS -.logs.-> CW[CloudWatch Logs]
+```
+
+| Peça | Papel |
+|---|---|
+| **VPC** em 2 zonas | sub-redes públicas para o balanceador e o container; sub-redes do banco sem nenhuma rota para fora |
+| **ALB** | endereço público, health check em `/health` e distribuição entre containers |
+| **ECS Fargate** | roda o container sem servidor para gerenciar, com rollback automático se um deploy falhar |
+| **RDS PostgreSQL 17** | banco gerenciado, criptografado, inacessível pela internet |
+| **ECR** | registro privado da imagem, com scan de vulnerabilidades a cada envio |
+| **Secrets Manager** | chaves da aplicação e senha do banco, injetadas no container em tempo de execução |
+| **CloudWatch Logs** | logs do container com retenção de 7 dias |
+| **S3** (bootstrap) | estado remoto do Terraform, versionado, criptografado e com trava |
+
+**Segurança na nuvem**
+
+- **Security groups encadeados**: a internet só alcança o ALB (porta 80), o container só aceita o ALB (8000) e o banco só aceita o container (5432). As regras referenciam outros security groups, não IPs.
+- **Nenhum segredo na imagem nem no código.** A senha do banco é gerada pelo próprio RDS (`manage_master_user_password`) e nunca aparece no Terraform. As chaves da aplicação vão do `.env` local direto para o Secrets Manager por um script, sem passar pelo estado do Terraform.
+- **Menor privilégio**: uma role de execução que só lê os dois segredos do projeto e baixa a imagem, e uma role da tarefa separada para o container.
+- **IP real do cliente**: o uvicorn confia no cabeçalho `X-Forwarded-For` apenas vindo da VPC, para o rate limit enxergar o usuário, e não o balanceador.
+- **Modelos com versão fixada** por hash de commit, baixados do Hugging Face na inicialização.
+
+**Como foi feito o deploy**
+
+```bash
+cd infra/bootstrap && terraform apply          # uma vez: bucket do estado remoto
+cd .. && terraform apply -var="tarefas=0"      # infraestrutura sem container
+python infra/enviar_segredos.py                # chaves do .env para o Secrets Manager
+docker build -t <ecr>:v1 . && docker push <ecr>:v1
+terraform apply                                # liga o container
+terraform destroy                              # remove tudo ao final
+```
+
+Na primeira inicialização, o container cria as tabelas no RDS vazio, faz a ingestão das políticas e carrega os modelos. Do primeiro script SQL ao servidor pronto, levou menos de 1 minuto:
+
+```
+Apply complete! Resources: 38 added, 0 changed, 0 destroyed.
+
+Outputs:
+cluster     = "novabyte-cluster"
+ecr         = "<conta>.dkr.ecr.us-east-1.amazonaws.com/novabyte-app"
+url         = "http://novabyte-alb-<id>.us-east-1.elb.amazonaws.com"
+```
+
+Ao final da sessão, tudo foi removido com um comando:
+
+```
+Destroy complete! Resources: 38 destroyed.
+```
+
+![Chat rodando na AWS](docs/aws/05-chat-aws.png)
+
+![Mapa da VPC](docs/aws/02-vpc.png)
+
+![Serviço no ECS com o alvo saudável no balanceador](docs/aws/03-ecs.png)
+
+![Logs da inicialização no CloudWatch](docs/aws/07-logs.png)
+
+![Banco no RDS](docs/aws/06-rds.png)
+
+**Latência em produção, medida no LangSmith**
+
+![Trace na AWS](docs/aws/08-langsmith.png)
+
+| Etapa | Local (PC) | AWS (Fargate, 2 vCPU) |
+|---|---|---|
+| Guardrail (Prompt Guard) | ~0,3 s | 0,27 s |
+| Roteador (Gemini) | 1,0 s | 6,7 s |
+| Rerank (CPU) | rápido com o modelo aquecido | 8,3 s |
+| Resposta (Gemini) | 0,6 s | 6,6 s |
+
+Dois gargalos com causas diferentes: o **rerank** é limitado pela CPU da tarefa, e as chamadas ao **Gemini** variaram do lado do provedor (plano gratuito, sem garantia de latência), já que a rede da AWS não explica um aumento dessa ordem. O CloudWatch mostrou uso de memória de cerca de 16% dos 8 GB e pico de CPU de 49% na inicialização. Próximos ajustes: mais vCPU ou menos candidatos para o rerank, validados pelo eval de retrieval, e uma tarefa com menos memória.
+
+**Custo e decisões**
+
+A infraestrutura custa cerca de US$ 0,17 por hora e foi destruída ao final da sessão. Para manter a demo simples e barata, ficaram de fora, como evoluções para produção:
+
+- **NAT Gateway e sub-redes privadas para o app**: hoje o container fica numa sub-rede pública, protegido pelo security group que só aceita o ALB.
+- **EFS** para guardar os modelos entre execuções, em vez de baixá-los a cada inicialização.
+- **HTTPS** com domínio próprio, Route 53 e certificado do ACM.
+- **Deploy contínuo** pelo GitHub Actions com OIDC, sem chaves da AWS guardadas no GitHub.
+- **Região sa-east-1** em produção, por residência de dados (LGPD); na demo, us-east-1 por custo.
+
 ## Como rodar
 
 Pré-requisitos: Docker e uma chave gratuita da API do Gemini.
@@ -139,10 +243,9 @@ Preencha no `.env` ao menos `GOOGLE_API_KEY`, `POSTGRES_PASSWORD` e `API_KEY`. O
 
 ```bash
 docker compose up -d --build
-docker compose exec app python -m agente.rag.ingestao
 ```
 
-Na primeira subida, o banco é criado e populado automaticamente, e os modelos locais são baixados (alguns minutos). Acompanhe com `docker compose logs -f app` até aparecer `Application startup complete`.
+Na primeira subida, o banco é criado e populado, as políticas são indexadas e os modelos locais são baixados, tudo automaticamente (alguns minutos). Acompanhe com `docker compose logs -f app` até aparecer `Application startup complete`.
 
 Depois, **abra no navegador**:
 
@@ -184,6 +287,7 @@ agente/
   seguranca/        guardrails e Prompt Guard
   infra/            pool de conexões, LLM e checkpointer
   interfaces/       API, tela de chat e chat de terminal
+infra/              Terraform da AWS (bootstrap do estado remoto e arquitetura)
 data/politicas/     políticas da loja em Markdown
 db/                 schema e dados iniciais
 evals/              datasets e scripts de avaliação
