@@ -7,3 +7,8 @@ __pycache__/
 
 chroma_db/
 logs/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
