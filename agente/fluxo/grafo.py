@@ -31,6 +31,7 @@ class Estado(TypedDict, total=False):
 
 
     classificacao: Classificacao
+    pendente: Classificacao | None
     trechos: list[Document]
     dados_pedido: str | None
     pedido_encontrado: bool
@@ -88,8 +89,16 @@ def rotear(estado: Estado) -> dict:
 
     c = classificar(ultima, historico)
 
+    pendente = estado.get("pendente")
+    if pendente and c.intencao == "pedido" and pendente.intencao != "pedido":
+        c = c.model_copy(update={
+            "intencao": pendente.intencao,
+            "pergunta_reescrita": pendente.pergunta_reescrita,
+        })
+
     atualizacao = {
         "classificacao": c,
+        "pendente": None,
         "trechos": [],
         "dados_pedido": None,
         "pedido_encontrado": True,
@@ -174,7 +183,7 @@ def boas_vindas(estado: Estado) -> dict:
 
 
 def pedir_dados(estado: Estado) -> dict:
-    return _responder_com(MSG_PEDIR_DADOS)  
+    return {"pendente": estado["classificacao"], **_responder_com(MSG_PEDIR_DADOS)}  
 
 
 def depois_da_entrada(estado: Estado) -> str:
